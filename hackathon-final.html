@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Advisor - Complete Hackathon Solution</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/vis-network@latest/dist/vis-network.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 2% auto; padding: 20px; border-radius: 15px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; }
+        .skill-tag { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 6px 16px; border-radius: 25px; margin: 4px; font-size: 14px; font-weight: 500; }
+        .career-card { background: linear-gradient(135deg, #f8fafc, #e2e8f0); border-left: 4px solid #667eea; padding: 20px; margin: 15px 0; border-radius: 12px; transition: all 0.3s ease; }
+        .career-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .progress-bar { width: 100%; height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.5s ease; }
+        .step-card { background: white; border-radius: 15px; padding: 25px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 2px solid transparent; transition: all 0.3s ease; }
+        .step-card:hover { border-color: #667eea; transform: translateY(-3px); }
+        .step-card.current { border-color: #10b981; background: linear-gradient(135deg, #f0fdf4, #dcfce7); }
+        .step-card.missing { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7); }
+        .step-card.suggested { border-color: #8b5cf6; background: linear-gradient(135deg, #faf5ff, #f3e8ff); }
+        .step-card.roadmap { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        .course-card { background: white; border-radius: 12px; padding: 20px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 4px solid #667eea; }
+        .resume-upload { border: 2px dashed #667eea; border-radius: 12px; padding: 40px; text-align: center; background: linear-gradient(135deg, #f8fafc, #e2e8f0); transition: all 0.3s ease; }
+        .resume-upload:hover { border-color: #764ba2; background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        .education-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 15px; padding: 25px; margin: 15px 0; }
+        .floating-btn { position: fixed; bottom: 30px; right: 30px; z-index: 1000; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; cursor: pointer; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        .floating-btn:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Floating AI Assistant -->
+    <button class="floating-btn" onclick="openAIAssistant()" title="AI Career Assistant">
+        <i data-lucide="message-circle" class="h-6 w-6 mx-auto"></i>
+    </button>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="brain" class="h-8 w-8 text-purple-600"></i>
+                    <span class="text-xl font-bold gradient-text">AI Career Advisor</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Home</a>
+                    <a href="#resume" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Resume Analyzer</a>
+                    <a href="#career-path" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Career Path</a>
+                    <a href="#education" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">After 10th/12th</a>
+                    <a href="#courses" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">AI Courses</a>
+                    <a href="#analytics" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Analytics</a>
+                    <a href="#interview" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Mock Interview</a>
+                    <a href="#admin" class="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors">Admin</a>
+                </div>
+                <button class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all">
+                    Get Started
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center pt-16 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center max-w-5xl mx-auto">
+                <h1 class="text-6xl md:text-8xl font-bold gradient-text mb-8">
+                    AI-Powered Career & Skills Advisor
+                </h1>
+                <p class="text-2xl md:text-3xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
+                    Transform your career journey with intelligent guidance, personalized roadmaps, and AI-powered course recommendations.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                    <button onclick="scrollToSection('resume')" class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-10 py-6 rounded-xl text-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105">
+                        Analyze My Resume
+                    </button>
+                    <button onclick="scrollToSection('career-path')" class="border-2 border-purple-600 text-purple-600 px-10 py-6 rounded-xl text-xl font-semibold hover:bg-purple-600 hover:text-white transition-all transform hover:scale-105">
+                        Explore Career Paths
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resume Analyzer Section -->
+    <section id="resume" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">Resume & LinkedIn Analyzer</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Upload your resume or connect LinkedIn to get AI-powered analysis and personalized job suggestions.
+                </p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Upload Area -->
+                    <div class="step-card">
+                        <h3 class="text-2xl font-bold mb-6 text-center">Upload Your Resume</h3>
+                        <div class="resume-upload" onclick="document.getElementById('fileInput').click()">
+                            <i data-lucide="upload" class="h-16 w-16 text-purple-600 mx-auto mb-4"></i>
+                            <h4 class="text-xl font-semibold mb-2">Drop your resume here</h4>
+                            <p class="text-gray-600 mb-4">or click to browse files</p>
+                            <p class="text-sm text-gray-500">Supports PDF, DOC, DOCX (Max 10MB)</p>
+                        </div>
+                        <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx" onchange="analyzeResume()">
+                        
+                        <div class="mt-6 text-center">
+                            <div class="text-lg font-semibold mb-4">OR</div>
+                            <button onclick="connectLinkedIn()" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                                <i data-lucide="linkedin" class="h-5 w-5 mr-2"></i>Connect LinkedIn
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Results -->
+                    <div class="step-card">
+                        <h3 class="text-2xl font-bold mb-6 text-center">AI Analysis Results</h3>
+                        <div id="analysisResults" class="hidden">
+                            <div class="mb-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-semibold">Resume Score</span>
+                                    <span class="text-2xl font-bold text-green-600">85/100</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-800 mb-2">✅ Strengths</h4>
+                                    <ul class="text-sm text-green-700 space-y-1">
+                                        <li>• Strong technical skills in JavaScript and React</li>
+                                        <li>• Good project experience</li>
+                                        <li>• Clear formatting and structure</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-yellow-800 mb-2">⚠️ Areas to Improve</h4>
+                                    <ul class="text-sm text-yellow-700 space-y-1">
+                                        <li>• Add quantifiable achievements</li>
+                                        <li>• Include more specific technologies</li>
+                                        <li>• Expand on leadership experience</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-blue-800 mb-2">🎯 Suggested Jobs</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm">Frontend Developer</span>
+                                            <span class="text-sm font-semibold text-green-600">95% match</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm">Full Stack Developer</span>
+                                            <span class="text-sm font-semibold text-green-600">88% match</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm">React Developer</span>
+                                            <span class="text-sm font-semibold text-green-600">92% match</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Career Path Visualizer -->
+    <section id="career-path" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">Interactive Career Path</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Visualize your complete career journey: Current Skills → Missing Skills → Suggested Career → Learning Roadmap
+                </p>
+            </div>
+            
+            <div class="max-w-7xl mx-auto">
+                <!-- Career Path Steps -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                    <div class="step-card current">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
+                            <h3 class="text-xl font-bold mb-4">Current Skills</h3>
+                            <div id="currentSkills">
+                                <span class="skill-tag">JavaScript</span>
+                                <span class="skill-tag">HTML/CSS</span>
+                                <span class="skill-tag">React</span>
+                                <span class="skill-tag">Git</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card missing">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
+                            <h3 class="text-xl font-bold mb-4">Missing Skills</h3>
+                            <div id="missingSkills">
+                                <span class="skill-tag">TypeScript</span>
+                                <span class="skill-tag">Node.js</span>
+                                <span class="skill-tag">AWS</span>
+                                <span class="skill-tag">Testing</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card suggested">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-purple-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
+                            <h3 class="text-xl font-bold mb-4">Suggested Career</h3>
+                            <div class="space-y-2">
+                                <div class="font-semibold text-purple-600">Frontend Developer</div>
+                                <div class="text-sm text-gray-600">$70k - $120k</div>
+                                <div class="text-sm text-green-600">95% Match</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-card roadmap">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">4</div>
+                            <h3 class="text-xl font-bold mb-4">Learning Roadmap</h3>
+                            <div class="text-sm space-y-1">
+                                <div>• Learn TypeScript (2 months)</div>
+                                <div>• Build 3 projects (3 months)</div>
+                                <div>• Apply for jobs (1 month)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Interactive Network -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-6 text-center">Interactive Career Network</h3>
+                    <div id="careerNetwork" style="height: 500px; border: 1px solid #e5e7eb; border-radius: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Education Guidance (After 10th/12th) -->
+    <section id="education" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">What After 10th & 12th?</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Clear guidance for students confused about their career path after school.
+                </p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- After 10th -->
+                    <div class="education-card">
+                        <h3 class="text-3xl font-bold mb-6">After 10th Grade</h3>
+                        <div class="space-y-4">
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Science Stream</h4>
+                                <p class="text-sm mb-2">Best for: Engineering, Medicine, Research</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• Physics, Chemistry, Mathematics</div>
+                                    <div>• Biology (for medical field)</div>
+                                    <div>• Computer Science (optional)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Commerce Stream</h4>
+                                <p class="text-sm mb-2">Best for: Business, Finance, Economics</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• Accountancy, Business Studies</div>
+                                    <div>• Economics, Mathematics</div>
+                                    <div>• Computer Applications</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Arts/Humanities</h4>
+                                <p class="text-sm mb-2">Best for: Literature, History, Psychology</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• English, History, Geography</div>
+                                    <div>• Psychology, Sociology</div>
+                                    <div>• Political Science</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- After 12th -->
+                    <div class="education-card">
+                        <h3 class="text-3xl font-bold mb-6">After 12th Grade</h3>
+                        <div class="space-y-4">
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Engineering</h4>
+                                <p class="text-sm mb-2">Top Specializations:</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• Computer Science Engineering</div>
+                                    <div>• Artificial Intelligence & ML</div>
+                                    <div>• Data Science Engineering</div>
+                                    <div>• Cybersecurity</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Medical Sciences</h4>
+                                <p class="text-sm mb-2">Career Options:</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• MBBS (Doctor)</div>
+                                    <div>• BDS (Dentist)</div>
+                                    <div>• Pharmacy</div>
+                                    <div>• Nursing</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/20 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Business & Management</h4>
+                                <p class="text-sm mb-2">Popular Courses:</p>
+                                <div class="text-sm space-y-1">
+                                    <div>• BBA (Business Administration)</div>
+                                    <div>• B.Com (Commerce)</div>
+                                    <div>• CA (Chartered Accountant)</div>
+                                    <div>• CFA (Finance)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Course Recommendations -->
+    <section id="courses" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">AI-Powered Course Recommendations</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Get personalized course suggestions based on your skills, interests, and career goals.
+                </p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white p-8 rounded-2xl shadow-lg mb-8">
+                    <h3 class="text-2xl font-bold mb-6">Tell us about yourself</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Skills</label>
+                            <input type="text" id="userSkills" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="e.g., JavaScript, Python, React">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Career Interest</label>
+                            <select id="careerInterest" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">Select your interest</option>
+                                <option value="frontend">Frontend Development</option>
+                                <option value="backend">Backend Development</option>
+                                <option value="fullstack">Full Stack Development</option>
+                                <option value="data">Data Science</option>
+                                <option value="ai">AI/ML Engineering</option>
+                                <option value="mobile">Mobile Development</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button onclick="getCourseRecommendations()" class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all">
+                            Get AI Recommendations
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="courseRecommendations" class="hidden">
+                    <h3 class="text-2xl font-bold mb-6">Recommended Courses for You</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="course-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-bold text-lg">Complete React Developer</h4>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">95% Match</span>
+                            </div>
+                            <p class="text-gray-600 mb-3">Master React, Redux, and modern frontend development</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Duration: 3 months</span>
+                                <span class="font-bold text-purple-600">$99</span>
+                            </div>
+                        </div>
+                        
+                        <div class="course-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-bold text-lg">TypeScript Fundamentals</h4>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">88% Match</span>
+                            </div>
+                            <p class="text-gray-600 mb-3">Learn TypeScript from basics to advanced concepts</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Duration: 1 month</span>
+                                <span class="font-bold text-purple-600">$49</span>
+                            </div>
+                        </div>
+                        
+                        <div class="course-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-bold text-lg">AWS Cloud Practitioner</h4>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">82% Match</span>
+                            </div>
+                            <p class="text-gray-600 mb-3">Get certified in AWS cloud computing</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Duration: 2 months</span>
+                                <span class="font-bold text-purple-600">$149</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Job Market Analytics -->
+    <section id="analytics" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">Job Market Analytics</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Real-time insights into job market trends, salary data, and emerging technologies.
+                </p>
+            </div>
+            
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="trending-up" class="h-12 w-12 text-green-500 mx-auto mb-4"></i>
+                        <h3 class="text-2xl font-bold text-green-600">+23%</h3>
+                        <p class="text-gray-600">Tech Jobs Growth</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="dollar-sign" class="h-12 w-12 text-blue-500 mx-auto mb-4"></i>
+                        <h3 class="text-2xl font-bold text-blue-600">$95k</h3>
+                        <p class="text-gray-600">Average Salary</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="users" class="h-12 w-12 text-purple-500 mx-auto mb-4"></i>
+                        <h3 class="text-2xl font-bold text-purple-600">2.1M</h3>
+                        <p class="text-gray-600">Open Positions</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="star" class="h-12 w-12 text-yellow-500 mx-auto mb-4"></i>
+                        <h3 class="text-2xl font-bold text-yellow-600">4.8/5</h3>
+                        <p class="text-gray-600">Job Satisfaction</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6">Top Skills in Demand</h3>
+                        <canvas id="skillsChart" width="400" height="300"></canvas>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6">Salary Trends by Role</h3>
+                        <canvas id="salaryChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mock Interview Section -->
+    <section id="interview" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">AI-Powered Mock Interview</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Practice with our AI interviewer and get personalized feedback on your performance.
+                </p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white p-8 rounded-2xl shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-6">Start Your Mock Interview</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Job Role</label>
+                                    <select id="jobRole" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <option value="">Select job role</option>
+                                        <option value="frontend">Frontend Developer</option>
+                                        <option value="backend">Backend Developer</option>
+                                        <option value="fullstack">Full Stack Developer</option>
+                                        <option value="data">Data Scientist</option>
+                                        <option value="ai">AI/ML Engineer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+                                    <select id="experienceLevel" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <option value="">Select level</option>
+                                        <option value="entry">Entry Level (0-2 years)</option>
+                                        <option value="mid">Mid Level (2-5 years)</option>
+                                        <option value="senior">Senior Level (5+ years)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Type</label>
+                                    <select id="companyType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <option value="">Select company type</option>
+                                        <option value="startup">Startup</option>
+                                        <option value="mid">Mid-size Company</option>
+                                        <option value="enterprise">Enterprise</option>
+                                        <option value="faang">FAANG</option>
+                                    </select>
+                                </div>
+                                <button onclick="startMockInterview()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all">
+                                    Start Interview
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="interviewArea" class="hidden">
+                            <h3 class="text-2xl font-bold mb-6">Interview in Progress</h3>
+                            <div class="bg-gray-50 p-6 rounded-lg mb-4" style="height: 300px; overflow-y: auto;">
+                                <div id="interviewMessages"></div>
+                            </div>
+                            <div class="flex space-x-4">
+                                <input type="text" id="interviewInput" placeholder="Type your answer..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <button onclick="sendInterviewAnswer()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Dashboard -->
+    <section id="admin" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-6">Admin Dashboard</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Comprehensive analytics and user management for administrators.
+                </p>
+            </div>
+            
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="users" class="h-12 w-12 text-blue-500 mx-auto mb-4"></i>
+                        <h3 class="text-3xl font-bold text-blue-600">2,847</h3>
+                        <p class="text-gray-600">Total Users</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="activity" class="h-12 w-12 text-green-500 mx-auto mb-4"></i>
+                        <h3 class="text-3xl font-bold text-green-600">1,234</h3>
+                        <p class="text-gray-600">Active Sessions</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="map" class="h-12 w-12 text-purple-500 mx-auto mb-4"></i>
+                        <h3 class="text-3xl font-bold text-purple-600">5,678</h3>
+                        <p class="text-gray-600">Career Paths Generated</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                        <i data-lucide="target" class="h-12 w-12 text-orange-500 mx-auto mb-4"></i>
+                        <h3 class="text-3xl font-bold text-orange-600">87%</h3>
+                        <p class="text-gray-600">Success Rate</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6">User Activity</h3>
+                        <canvas id="userActivityChart" width="400" height="300"></canvas>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6">Popular Career Paths</h3>
+                        <canvas id="careerPathsChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Assistant Modal -->
+    <div id="aiAssistantModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('aiAssistantModal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-6">AI Career Assistant</h2>
+            <div class="bg-gray-50 p-4 rounded-lg mb-4" style="height: 300px; overflow-y: auto;">
+                <div id="chatMessages"></div>
+            </div>
+            <div class="flex space-x-4">
+                <input type="text" id="chatInput" placeholder="Ask me about careers, courses, or skills..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <button onclick="sendMessage()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        let network = null;
+        
+        // Smooth scrolling
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Resume Analysis
+        function analyzeResume() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                document.getElementById('analysisResults').classList.remove('hidden');
+                // Simulate AI analysis
+                setTimeout(() => {
+                    alert('Resume analyzed! Check the results panel for detailed feedback and job suggestions.');
+                }, 2000);
+            }
+        }
+        
+        function connectLinkedIn() {
+            alert('LinkedIn connection would be implemented here. For demo purposes, showing analysis results.');
+            document.getElementById('analysisResults').classList.remove('hidden');
+        }
+        
+        // Career Path Network
+        function initializeCareerNetwork() {
+            const container = document.getElementById('careerNetwork');
+            
+            const nodes = new vis.DataSet([
+                {id: 1, label: 'Current Skills\n(JavaScript, React)', color: '#10b981', font: {size: 16}},
+                {id: 2, label: 'Learn TypeScript\n(2 months)', color: '#3b82f6', font: {size: 16}},
+                {id: 3, label: 'Learn Node.js\n(3 months)', color: '#3b82f6', font: {size: 16}},
+                {id: 4, label: 'Learn AWS\n(2 months)', color: '#3b82f6', font: {size: 16}},
+                {id: 5, label: 'Build Projects\n(4 months)', color: '#8b5cf6', font: {size: 16}},
+                {id: 6, label: 'Frontend Developer\n$70k-120k', color: '#f59e0b', font: {size: 16}},
+                {id: 7, label: 'Full Stack Developer\n$80k-140k', color: '#f59e0b', font: {size: 16}},
+                {id: 8, label: 'Senior Developer\n$100k-180k', color: '#8b5cf6', font: {size: 16}}
+            ]);
+            
+            const edges = new vis.DataSet([
+                {from: 1, to: 2, label: 'Next Step', color: '#667eea'},
+                {from: 1, to: 3, label: 'Next Step', color: '#667eea'},
+                {from: 1, to: 4, label: 'Next Step', color: '#667eea'},
+                {from: 2, to: 5, label: 'Practice', color: '#8b5cf6'},
+                {from: 3, to: 5, label: 'Practice', color: '#8b5cf6'},
+                {from: 4, to: 5, label: 'Practice', color: '#8b5cf6'},
+                {from: 5, to: 6, label: 'Apply', color: '#f59e0b'},
+                {from: 5, to: 7, label: 'Apply', color: '#f59e0b'},
+                {from: 6, to: 8, label: 'Grow', color: '#8b5cf6'},
+                {from: 7, to: 8, label: 'Grow', color: '#8b5cf6'}
+            ]);
+            
+            const data = { nodes, edges };
+            const options = {
+                nodes: {
+                    shape: 'box',
+                    font: {size: 16, color: '#333'},
+                    borderWidth: 2,
+                    margin: 15,
+                    shadow: true
+                },
+                edges: {
+                    font: {size: 14, color: '#666'},
+                    arrows: {to: {enabled: true, scaleFactor: 0.8}},
+                    color: {color: '#667eea', highlight: '#764ba2'}
+                },
+                layout: {
+                    hierarchical: {
+                        direction: 'LR',
+                        sortMethod: 'directed',
+                        nodeSpacing: 200,
+                        levelSeparation: 150
+                    }
+                },
+                physics: {
+                    enabled: false
+                }
+            };
+            
+            network = new vis.Network(container, data, options);
+        }
+        
+        // Course Recommendations
+        function getCourseRecommendations() {
+            const skills = document.getElementById('userSkills').value;
+            const interest = document.getElementById('careerInterest').value;
+            
+            if (!skills || !interest) {
+                alert('Please fill in both skills and career interest.');
+                return;
+            }
+            
+            document.getElementById('courseRecommendations').classList.remove('hidden');
+            alert('AI is analyzing your profile and generating personalized course recommendations...');
+        }
+        
+        // AI Assistant
+        function openAIAssistant() {
+            document.getElementById('aiAssistantModal').style.display = 'block';
+            addMessage('AI Assistant', 'Hello! I\'m your AI Career Assistant. I can help you with career guidance, course recommendations, and skill development. What would you like to know?');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addMessage('You', message);
+                input.value = '';
+                
+                // Simulate AI response
+                setTimeout(() => {
+                    const responses = [
+                        'Based on your skills, I recommend focusing on frontend development. Would you like to explore specific learning paths?',
+                        'Great question! For your career goals, I suggest learning TypeScript and modern React patterns. Here are some courses I recommend...',
+                        'I can help you create a personalized learning roadmap. What specific technologies are you most interested in?',
+                        'Based on current market trends, AI/ML skills are in high demand. Would you like to explore this field?'
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    addMessage('AI Assistant', randomResponse);
+                }, 1000);
+            }
+        }
+        
+        function addMessage(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-3 p-3 rounded-lg ' + (sender === 'You' ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8');
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Mock Interview Functions
+        function startMockInterview() {
+            const jobRole = document.getElementById('jobRole').value;
+            const experienceLevel = document.getElementById('experienceLevel').value;
+            const companyType = document.getElementById('companyType').value;
+            
+            if (!jobRole || !experienceLevel || !companyType) {
+                alert('Please fill in all fields to start the interview.');
+                return;
+            }
+            
+            document.getElementById('interviewArea').classList.remove('hidden');
+            addInterviewMessage('AI Interviewer', `Welcome! I'm your AI interviewer. We'll be discussing the ${jobRole} position for ${experienceLevel} level at a ${companyType} company. Let's start with your first question: "Tell me about yourself and why you're interested in this role."`);
+        }
+        
+        function sendInterviewAnswer() {
+            const input = document.getElementById('interviewInput');
+            const answer = input.value.trim();
+            
+            if (answer) {
+                addInterviewMessage('You', answer);
+                input.value = '';
+                
+                // Simulate AI follow-up questions
+                setTimeout(() => {
+                    const questions = [
+                        "That's interesting! Can you tell me about a challenging project you worked on?",
+                        "How do you stay updated with the latest technologies in your field?",
+                        "Describe a time when you had to work in a team and faced a conflict. How did you resolve it?",
+                        "What are your career goals for the next 5 years?",
+                        "Do you have any questions about our company or this role?",
+                        "Thank you for your time! Based on our conversation, I can see you have strong technical skills. I'll provide feedback shortly."
+                    ];
+                    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+                    addInterviewMessage('AI Interviewer', randomQuestion);
+                }, 1500);
+            }
+        }
+        
+        function addInterviewMessage(sender, message) {
+            const interviewMessages = document.getElementById('interviewMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-3 p-3 rounded-lg ' + (sender === 'You' ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8');
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            interviewMessages.appendChild(messageDiv);
+            interviewMessages.scrollTop = interviewMessages.scrollHeight;
+        }
+        
+        // Chart.js Functions
+        function initializeCharts() {
+            // Skills Chart
+            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(skillsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['JavaScript', 'Python', 'React', 'Node.js', 'AWS', 'Docker'],
+                    datasets: [{
+                        data: [25, 20, 18, 15, 12, 10],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Salary Chart
+            const salaryCtx = document.getElementById('salaryChart').getContext('2d');
+            new Chart(salaryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Frontend', 'Backend', 'Full Stack', 'Data Science', 'AI/ML'],
+                    datasets: [{
+                        label: 'Average Salary (k)',
+                        data: [85, 95, 110, 120, 130],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // User Activity Chart
+            const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+            new Chart(userActivityCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Active Users',
+                        data: [1200, 1500, 1800, 2200, 2500, 2800],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Career Paths Chart
+            const careerPathsCtx = document.getElementById('careerPathsChart').getContext('2d');
+            new Chart(careerPathsCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Frontend Dev', 'Backend Dev', 'Data Science', 'AI/ML', 'DevOps'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCareerNetwork();
+            initializeCharts();
+            
+            // Add enter key support for chat
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Add enter key support for interview
+            document.getElementById('interviewInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendInterviewAnswer();
+                }
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
